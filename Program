@@ -2,7 +2,6 @@
 
 from tkinter import*
 import random
-import copy
 
 def init(data):
     data["tetrisPieces"] = [[
