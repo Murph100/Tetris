@@ -36,23 +36,66 @@ def init(data):
     data["fallingPieceColor"] = ""
     data["start"] = ""
     data["score"] = 0
+    data["mode"] = "welcome"
 
 ### Main Functions ###
 
 def redrawAll(canvas, data):
+    if(data["mode"] == "welcome"): welcomeRedrawAll(canvas, data)
+    if(data["mode"] == "gamePlay"): gamePlayRedrawAll(canvas, data)
+    if(data["mode"] == "gameOver"): gameOverRedrawAll(canvas, data)
+    if(data["mode"] == "pause"): pauseRedrawAll(canvas, data)
+
+def mousePressed(event, data):
+    if(data["mode"] == "welcome"): welcomeMousePressed(event, data)
+    if(data["mode"] == "gamePlay"): gamePlayMousePressed(event, data)
+    if(data["mode"] == "gameOver"): gameOverMousePressed(event, data)
+    if(data["mode"] == "pause"): pauseMousePressed(event, data)
+
+def keyPressed(event, data):
+    if(data["mode"] == "welcome"): welcomeKeyPressed(event, data)
+    if(data["mode"] == "gamePlay"): gamePlayKeyPressed(event, data)
+    if(data["mode"] == "gameOver"): gameOverKeyPressed(event, data)
+    if(data["mode"] == "pause"): pauseKeyPressed(event, data)
+
+def timerFired(event, data):
+    if(data["mode"] == "gamePlay"): gamePlayTimerFired(event)
+
+############################## Welcome Screen ##################################
+
+def welcomeRedrawAll(canvas, data):
+    canvas.create_rectangle(0, 0, data["width"], data["height"], outline="grey", fill="grey")
+    canvas.create_rectangle(220, 300, 280, 330, fill="white")
+    canvas.create_text(data["width"]/2, data["height"]/2, text="Tetris")
+    canvas.create_text(250, 315, text="Play")
+
+def welcomeMousePressed(event, data):
+    if(220 <= event.x <= 280) and (300 <= event.y <= 330): data["mode"] = "gamePlay"
+
+def welcomeKeyPressed(event, data):
+    pass
+
+def welcomeTimerFired(data):
+    pass
+
+############################ GamePlay Screen ###################################
+
+def gamePlayRedrawAll(canvas, data):
     buildGrid(canvas, data)
     canvas.create_rectangle(400, 100, 450, 130, outline="black")
     canvas.create_text(370, 115, text="Score")
     canvas.create_text(425, 115, text=data["score"])
 
-def mousePressed(event, data):
+def gamePlayMousePressed(event, data):
     pass
 
-def keyPressed(event, data):
+def gamePlayKeyPressed(event, data):
+    piece = data["newFallingPiece"]    
     if(event.keysym == "Right"):
         collision(data)
         board(data)
         if(data["start"][0] + len(data["newFallingPiece"][0]) < data["col"]):
+            print(data["start"][0] + len(data["newFallingPiece"][0]))
             data["start"][0] += 1
         drawFallingPiece(data)
     if(event.keysym == "Left"):
@@ -64,15 +107,16 @@ def keyPressed(event, data):
     if(event.keysym == "Down"):
         collision(data)
         board(data)
-        if(data["start"][1] + len(data["newFallingPiece"]) < data["row"]):
+        if(not offGrid(data)):
             data["start"][1] += 1
+            collision(data)
         drawFallingPiece(data)
     if(event.keysym == "Up"):
         collision(data)
         board(data)
         data["newFallingPiece"] = transpose(data)
-        if(data["start"][1] + len(data["newFallingPiece"][0]) > data["col"]):
-            data["start"][1] = data["start"][1] - (data["start"][1] + len(data["newFallingPiece"][0]) - data["col"])
+        if(data["start"][0] + len(data["newFallingPiece"][0]) > data["col"]):
+            data["start"][0] = data["start"][0] - (data["start"][0] + len(data["newFallingPiece"][0]) - data["col"])
         drawFallingPiece(data)
     if(event.keysym == "r"):
         board(data)
@@ -80,7 +124,7 @@ def keyPressed(event, data):
         start(data)
         drawFallingPiece(data)
 
-def timerFired(data):
+def gamePlayimerFired(data):
     data["start"][1] += 1
     board(data)
     collision(data)
@@ -183,7 +227,7 @@ def collision(data):
         for i in range(len(piece)):
             for x in range(len(piece[i])):
                 if (piece[i][x] == True):
-                    if((data["start"][1] + i) >= data["row"]):
+                    if((data["start"][1] + i + 1) >= data["row"]):
                         stickPiece(data)
                         shiftStuck(data)
                         newFallingPiece(data)
@@ -197,7 +241,7 @@ def offGrid(data):
             if (piece[i][x] == True):
                 if(data["start"][1] + i + 1 >= data["row"]):
                     break
-                if(not data["placed"][(data["start"][1] + i)][(data["start"][0] + x)] == "white"):
+                if(not data["placed"][(data["start"][1] + i + 1)][(data["start"][0] + x)] == "white"):
                     return True
     return False
 
@@ -207,7 +251,7 @@ def stickPiece(data):
     for i in range(len(piece)):
         for x in range(len(piece[i])):
             if(piece[i][x] == True):
-                data["placed"][(data["start"][1] + i - 1)][(data["start"][0] + x)] = color
+                data["placed"][(data["start"][1] + i)][(data["start"][0] + x)] = color
     board(data)
     data["start"] = [4, 0]
 
@@ -228,7 +272,7 @@ def run(width=300, height=300):
         keyPressed(event, data)
         redrawAllWrapper(canvas, data)
     def timerFiredWrapper(canvas, data):
-        timerFired(data)
+        timerFired(data, data)
         redrawAllWrapper(canvas, data)
         canvas.after(data["timerDelay"], timerFiredWrapper, canvas, data)
     data = dict()
