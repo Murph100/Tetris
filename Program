@@ -36,6 +36,7 @@ def init(data):
     data["fallingPieceColor"] = ""
     data["start"] = ""
     data["score"] = 0
+    data["rotateCount"] = 0
     data["mode"] = "welcome"
 
 ### Main Functions ###
@@ -91,14 +92,13 @@ def gamePlayKeyPressed(event, data):
     if(event.keysym == "Right"):
         collision(data)
         board(data)
-        if(data["start"][0] + len(data["newFallingPiece"][0]) < data["col"]):
-            print(data["start"][0] + len(data["newFallingPiece"][0]))
+        if(offGrirdRight(data)):
             data["start"][0] += 1
         drawFallingPiece(data)
     if(event.keysym == "Left"):
         collision(data)
         board(data)
-        if(data["start"][0] > 0):
+        if(offGrirdLeft(data)):
             data["start"][0] -= 1
         drawFallingPiece(data)
     if(event.keysym == "Down"):
@@ -111,10 +111,12 @@ def gamePlayKeyPressed(event, data):
     if(event.keysym == "Up"):
         collision(data)
         board(data)
-        data["newFallingPiece"] = transpose(data)
-        if(data["start"][0] + len(data["newFallingPiece"][0]) > data["col"]):
-            data["start"][0] = data["start"][0] - (data["start"][0] + len(data["newFallingPiece"][0]) - data["col"])
+        if(data["start"][1] + len(data["newFallingPiece"][0]) > data["row"]):
+            data["start"][1] = data["start"][1] - (data["start"][1] + len(data["newFallingPiece"][0]) - data["row"])
+        if(offGrirdUp(data)):
+            data["newFallingPiece"] = rotate(data)
         drawFallingPiece(data)
+        data["rotateCount"] += 1
 
 def gamePlayTimerFired(data):
     data["start"][1] += 1
@@ -122,7 +124,6 @@ def gamePlayTimerFired(data):
     collision(data)
     drawFallingPiece(data)
     gamePlayGameOver(data)
-    print(data["start"])
 
 def gamePlayGameOver(data):
     placed = data["placed"]
@@ -194,6 +195,8 @@ def newFallingPiece(data):
     z = random.randint(0,6)
     data["newFallingPiece"] = (data["tetrisPieces"])[z]
     data["fallingPieceColor"] = data["tetrisPieceColor"][z]
+    data["rotateCount"] = 0
+    data["basePiece"] = data["newFallingPiece"]
 
 def drawFallingPiece(data):
     piece = data["newFallingPiece"]
@@ -202,16 +205,6 @@ def drawFallingPiece(data):
         for x in range(len(piece[i])):
             if(piece[i][x] == True):
                 (data["board"])[(data["start"][1] + i)][(data["start"][0] + x)] = color
-
-def transpose(data):
-    piece = data["newFallingPiece"]
-    newList = [ ]
-    for i in range(len(piece)):
-        for x in range(len(piece[i])):
-            if(i == 0):
-                newList.append([ ])
-            newList[x].append(piece[i][x])
-    return newList
 
 def collision(data):
     (row, col) = data["start"]
@@ -254,6 +247,105 @@ def stickPiece(data):
                 data["placed"][(data["start"][1] + i)][(data["start"][0] + x)] = color
     board(data)
     data["start"] = [4, 0]
+
+def rotate(data):
+    rotateCount = data["rotateCount"] % 4
+    piece = data["basePiece"]
+    oldRow = data["start"][0]
+    oldCol = data["start"][1]
+    oldWidth = len(data["newFallingPiece"][0])
+    oldHeight = len(data["newFallingPiece"])
+
+    newList = [ ]
+
+    if (rotateCount == 0):
+        newList = transpose(data, piece)
+        newList = flip(newList)
+    elif (rotateCount == 1):
+        newList = mirror(piece)
+        newList = flip(newList)
+    elif (rotateCount == 2):
+        newList = transpose(data, piece)
+        newList = mirror(newList)
+    elif (rotateCount == 3):
+        newList = piece
+
+    newWidth = len(newList[0])
+    newHeight = len(newList)    
+
+    oldCenterY = oldRow + oldHeight/2
+    oldCenterX = oldCol + oldWidth/2
+
+    newRow = oldCenterY - newHeight/2
+    newCol = oldCenterX - newWidth/2
+
+    offsetY = int(newRow - oldRow)
+    offsetX = int(newCol - oldCol)
+
+    data["start"][0] += offsetY
+    data["start"][1] += offsetX
+
+
+    return newList
+
+
+def transpose(data, piece):
+    rotateCount = data["rotateCount"] % 4
+    piece = data["basePiece"]
+    newList = [ ]
+
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(i == 0):
+                newList.append([ ])
+            newList[x].append(piece[i][x])
+    return newList
+
+def flip(piece):
+    newList = piece[::-1]
+    return newList    
+
+
+def mirror(piece):
+    newList = [ ]
+
+    for row in range(len(piece)):
+        newRow = piece[row][::-1]
+        newList.append(newRow)
+    return newList
+    
+def offGrirdRight(data):
+    piece = data["newFallingPiece"]
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(data["start"][0] + x + 1 < data["col"]):
+                if(not data["placed"][(data["start"][1] + i)][(data["start"][0] + x + 1)] == "white"):
+                    return False
+            else:
+                return False
+    return True
+    
+def offGrirdLeft(data):
+    piece = data["newFallingPiece"]
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(data["start"][0] + x - 1 >= 0):
+                if(not data["placed"][(data["start"][1] + i)][(data["start"][0] + x - 1)] == "white"):
+                    return False
+            else:
+                return False
+    return True
+
+def offGrirdUp(data):
+    piece = data["newFallingPiece"]
+    for i in range(len(piece)):
+        for x in range(len(piece[i])):
+            if(0 <= (data["start"][1] + i + len(piece) - 1) <= data["row"]) and (0 <= (data["start"][0] + x + len(piece[i]) - 1) <= data["col"]):
+                if(not data["placed"][(data["start"][1] + i)][(data["start"][0] + x)] == "white"):
+                    return False
+            else:
+                return False
+    return True
 
 ### GameOver ###
 
