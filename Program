@@ -44,19 +44,16 @@ def redrawAll(canvas, data):
     if(data["mode"] == "welcome"): welcomeRedrawAll(canvas, data)
     if(data["mode"] == "gamePlay"): gamePlayRedrawAll(canvas, data)
     if(data["mode"] == "gameOver"): gameOverRedrawAll(canvas, data)
-    if(data["mode"] == "pause"): pauseRedrawAll(canvas, data)
 
 def mousePressed(event, data):
     if(data["mode"] == "welcome"): welcomeMousePressed(event, data)
     if(data["mode"] == "gamePlay"): gamePlayMousePressed(event, data)
     if(data["mode"] == "gameOver"): gameOverMousePressed(event, data)
-    if(data["mode"] == "pause"): pauseMousePressed(event, data)
 
 def keyPressed(event, data):
     if(data["mode"] == "welcome"): welcomeKeyPressed(event, data)
     if(data["mode"] == "gamePlay"): gamePlayKeyPressed(event, data)
     if(data["mode"] == "gameOver"): gameOverKeyPressed(event, data)
-    if(data["mode"] == "pause"): pauseKeyPressed(event, data)
 
 def timerFired(event, data):
     if(data["mode"] == "gamePlay"): gamePlayTimerFired(event)
@@ -118,18 +115,21 @@ def gamePlayKeyPressed(event, data):
         if(data["start"][0] + len(data["newFallingPiece"][0]) > data["col"]):
             data["start"][0] = data["start"][0] - (data["start"][0] + len(data["newFallingPiece"][0]) - data["col"])
         drawFallingPiece(data)
-    if(event.keysym == "r"):
-        board(data)
-        newFallingPiece(data)
-        start(data)
-        drawFallingPiece(data)
 
-def gamePlayimerFired(data):
+def gamePlayTimerFired(data):
     data["start"][1] += 1
     board(data)
     collision(data)
     drawFallingPiece(data)
+    gamePlayGameOver(data)
     print(data["start"])
+
+def gamePlayGameOver(data):
+    placed = data["placed"]
+    for i in range(0, 2):
+        for x in range(3, 7):
+            if(not placed[i][x] == "white"):
+                data["mode"] = "gameOver"
 
 ### Board
 
@@ -147,7 +147,7 @@ def board(data):
     data["board"] = board
 
 def placed(data):
-    placed = data["placed"]
+    placed = [ ]
     row = data["row"]
     col = data["col"]
     for i in range(row):
@@ -255,7 +255,27 @@ def stickPiece(data):
     board(data)
     data["start"] = [4, 0]
 
+### GameOver ###
 
+def gameOverRedrawAll(canvas, data):
+    canvas.create_rectangle(0, 0, data["width"], data["height"], fill="grey")
+    canvas.create_text(data["width"]/2, data["height"]/2, text="Game Over.")
+    canvas.create_text(data["width"]/2, data["height"]/2 + 20, text="Press 'r' to play again.")
+
+def gameOverKeyPressed(event, data):
+    if(event.keysym == "r"):
+        placed(data)
+        board(data)
+        data["score"] = 0
+        newFallingPiece(data)
+        start(data)
+        data["mode"] = "gamePlay"
+
+def gameOverTimerFired(data):
+    pass
+
+def gameOverMousePressed(data):
+    pass
 
 
 ### Run Function ###
